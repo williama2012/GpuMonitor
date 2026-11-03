@@ -16,16 +16,16 @@ public sealed class GpuMonitorForm : Form
     {
         Text = "NVIDIA GPU Monitor";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(560, 380);
+        MinimumSize = new Size(600, 600);
         BackColor = Color.FromArgb(24, 26, 32);
         ForeColor = Color.FromArgb(226, 228, 233);
         Font = new Font("Segoe UI", 9F);
-
         _header = new Label
         {
             Dock = DockStyle.Top,
             Height = 34,
-            Padding = new Padding(12, 8, 12, 8),
+            Padding = new Padding(12, 8, 12, 4),
+            Margin = new Padding(0,0,0,8),
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
             ForeColor = Color.FromArgb(150, 170, 255),
