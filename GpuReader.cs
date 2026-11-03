@@ -48,6 +48,16 @@ internal sealed class GpuReader : IDisposable
             Nvml.nvmlDeviceGetName(handle, name, 256);
             Nvml.nvmlDeviceGetMemoryInfo(handle, out var mem);
             Nvml.nvmlDeviceGetUtilizationRates(handle, out var core, out var vram);
+            if (vram == 0)
+            {
+                // nvmlDeviceGetUtilizationRates reports mem=0 (rc=Success) on some
+                // Windows/GeForce combos — the same value nvidia-smi's MEM-Util
+                // comes from nvmlDeviceGetSamples (NVML_SAMPLING_TYPE_UTILITY_MEMORY).
+                ulong lastSeen = 0;
+                uint valType = 0, sampleCount = 1;
+                if (Nvml.nvmlDeviceGetSamples(handle, Nvml.SamplingTypeUtilityMemory, ref lastSeen, ref valType, ref sampleCount, out var memSample) == Nvml.Success)
+                    vram = memSample.sampleValue;
+            }
 
             gpus.Add(new GpuData((int)i, name.ToString(), mem.total, mem.free, mem.used, core, vram));
         }
