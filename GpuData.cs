@@ -9,7 +9,7 @@ internal sealed class GpuData
     public ulong VramFree { get; }  // bytes
     public ulong VramUsed { get; }  // bytes
     public uint CoreLoad { get; }  // % — nvmlDeviceGetUtilizationRates gpu
-    public uint VramLoad { get; }  // % — nvmlDeviceGetUtilizationRates mem
+    public uint VramLoad { get; }  // % — nvmlDeviceGetSamples UTILITY_MEMORY (util-rates mem is 0 on some drivers)
 
     public GpuData(int index, string name, ulong total, ulong free, ulong used, uint core, uint vram)
     {
