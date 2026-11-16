@@ -48,7 +48,7 @@ public sealed class GpuMonitorForm : Form
         Controls.Add(_header);
         Controls.Add(_host);
 
-        _timer = new System.Windows.Forms.Timer { Interval = 700 };
+        _timer = new System.Windows.Forms.Timer { Interval = 1000 };
         _timer.Tick += OnTick;
     }
 
