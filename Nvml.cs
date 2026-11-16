@@ -48,6 +48,9 @@ internal static class Nvml
     internal static extern int nvmlDeviceGetUtilizationRates(IntPtr device, out uint gpuUtilization, out uint memoryUtilization);
 
     [DllImport("nvml.dll", CallingConvention = CallingConvention.Cdecl)]
+    internal static extern int nvmlDeviceGetPowerUsage(IntPtr device, out uint powerUsage);
+
+    [DllImport("nvml.dll", CallingConvention = CallingConvention.Cdecl)]
     internal static extern int nvmlDeviceGetSamples(IntPtr device, uint type, ref ulong lastSeenTimeStamp, ref uint sampleValType, ref uint sampleCount, out Sample samples);
 
     [DllImport("nvml.dll", CallingConvention = CallingConvention.Cdecl)]

@@ -20,6 +20,10 @@ public sealed class GpuMonitorForm : Form
         BackColor = Color.FromArgb(24, 26, 32);
         ForeColor = Color.FromArgb(226, 228, 233);
         Font = new Font("Segoe UI", 9F);
+        FormBorderStyle = FormBorderStyle.FixedSingle;
+        SizeGripStyle = SizeGripStyle.Hide;
+        MinimizeBox = false;
+        MaximizeBox = false;
         _header = new Label
         {
             Dock = DockStyle.Top,

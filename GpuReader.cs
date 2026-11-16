@@ -48,6 +48,7 @@ internal sealed class GpuReader : IDisposable
             Nvml.nvmlDeviceGetName(handle, name, 256);
             Nvml.nvmlDeviceGetMemoryInfo(handle, out var mem);
             Nvml.nvmlDeviceGetUtilizationRates(handle, out var core, out var vram);
+            Nvml.nvmlDeviceGetPowerUsage(handle, out var power);
             if (vram == 0)
             {
                 // nvmlDeviceGetUtilizationRates reports mem=0 (rc=Success) on some
@@ -59,7 +60,7 @@ internal sealed class GpuReader : IDisposable
                     vram = memSample.sampleValue;
             }
 
-            gpus.Add(new GpuData((int)i, name.ToString(), mem.total, mem.free, mem.used, core, vram));
+            gpus.Add(new GpuData((int)i, name.ToString(), mem.total, mem.free, mem.used, core, vram, power));
         }
 
         return (true, gpus, null);

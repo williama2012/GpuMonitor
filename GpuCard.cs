@@ -13,6 +13,7 @@ internal sealed class GpuCard : Panel
     private readonly ProgressBar _coreBar;
     private readonly Label _vramLoadPct;
     private readonly ProgressBar _vramLoadBar;
+    private readonly Label _powerText;
 
     public GpuCard()
     {
@@ -36,8 +37,8 @@ internal sealed class GpuCard : Panel
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70f));
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f));
 
-        // Rows: 0 name · 1 vramTitle · 2 vramBar · 3 vramText · 4 coreTitle · 5 coreBar · 6 vramLoadTitle · 7 vramLoadBar
-        for (int i = 0; i < 8; i++)
+        // Rows: 0 name · 1 vramTitle · 2 vramBar · 3 vramText · 4 coreTitle · 5 coreBar · 6 vramLoadTitle · 7 vramLoadBar · 8 powerTitle · 9 powerText
+        for (int i = 0; i < 10; i++)
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         _name = new Label
@@ -60,6 +61,12 @@ internal sealed class GpuCard : Panel
         var vramLoadTitle = SectionTitle("VRAM load");
         _vramLoadPct = PctLabel();
         _vramLoadBar = Bar();
+        var powerTitle = SectionTitle("Power usage");
+        _powerText = new Label
+        {
+            AutoSize = true,
+            ForeColor = Color.FromArgb(170, 175, 185),
+        };
 
         table.Controls.Add(_name, 0, 0);
         table.SetColumnSpan(_name, 2);
@@ -82,6 +89,10 @@ internal sealed class GpuCard : Panel
 
         table.Controls.Add(_vramLoadBar, 0, 7);
         table.SetColumnSpan(_vramLoadBar, 2);
+
+        table.Controls.Add(powerTitle, 0, 8);
+        table.Controls.Add(_powerText, 0, 9);
+        table.SetColumnSpan(_powerText, 2);
 
         Controls.Add(table);
     }
@@ -121,6 +132,7 @@ internal sealed class GpuCard : Panel
 
         _vramLoadPct.Text = $"{g.VramLoad}%";
         _vramLoadBar.Value = ClampPct((int)g.VramLoad);
+        _powerText.Text = $"Power: {(g.Power / 1000.0):0.0} W";
     }
 
     private static int ClampPct(int v) => Math.Clamp(v, 0, 100);
