@@ -16,7 +16,7 @@ public sealed class GpuMonitorForm : Form
     {
         Text = "NVIDIA GPU Monitor";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(600, 600);
+        MinimumSize = new Size(600, 700);
         BackColor = Color.FromArgb(24, 26, 32);
         ForeColor = Color.FromArgb(226, 228, 233);
         Font = new Font("Segoe UI", 9F);
@@ -112,7 +112,7 @@ public sealed class GpuMonitorForm : Form
         for (int i = 0; i < _cards.Count && i < gpus.Count; i++)
             _cards[i].Update(gpus[i]);
 
-        _header.Text = $"NVIDIA   ·   {gpus.Count} GPU(s)   ·   NVML   ·   updated {DateTime.Now:HH:mm:ss}";
+        _header.Text = $"NVIDIA   ·   {gpus.Count} GPU(s)   ·   NVML   ·   updated {DateTime.Now:hh:mm:ss tt}";
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
