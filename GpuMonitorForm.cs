@@ -40,11 +40,10 @@ public sealed class GpuMonitorForm : Form
         MinimizeBox = false;
         MaximizeBox = false;
         
-        // Create a container for the top bar to prevent overlapping
         var topBar = new Panel
         {
-            Dock = DockStyle.Top,
             Height = 70,
+            Width = this.Width,
             BackColor = Color.FromArgb(24, 26, 32),
         };
 
@@ -52,12 +51,13 @@ public sealed class GpuMonitorForm : Form
         {
             Dock = DockStyle.Top,
             Height = 34,
+            Width = this.Width,
             Padding = new Padding(12, 8, 12, 4),
             Margin = new Padding(0,0,0,8),
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
             ForeColor = Color.FromArgb(150, 170, 255),
-            Text = "Reading GPU…",
+            Text = "Reading GPU…"
         };
 
         _configBtn = new Button
@@ -75,22 +75,33 @@ public sealed class GpuMonitorForm : Form
 
         topBar.Controls.Add(_header);
         topBar.Controls.Add(_configBtn);
-        this.Controls.Add(topBar);
 
         _cpuStatsCard = new CpuStatsCard();
 
         _host = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill,
             AutoScroll = true,
             BackColor = Color.Transparent,
             Padding = new Padding(12),
+            Height = this.Height,
+            Width = this.Width
         };
 
-        // Add CPU stats first, then GPU cards
         _host.Controls.Add(_cpuStatsCard);
 
-        this.Controls.Add(_host);
+        var mainLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 2,
+            ColumnStyles = { new ColumnStyle(SizeType.Percent, 100f) },
+            RowStyles = { new RowStyle(SizeType.Absolute, 70f), new RowStyle(SizeType.Percent, 100f) }
+        };
+
+        mainLayout.Controls.Add(topBar, 0, 0);
+        mainLayout.Controls.Add(_host, 0, 1);
+
+        this.Controls.Add(mainLayout);
 
         _timer = new System.Windows.Forms.Timer { Interval = 1000 };
         _timer.Tick += OnTick;
