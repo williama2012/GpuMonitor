@@ -21,6 +21,10 @@ public sealed class GpuMonitorForm : Form
     private readonly List<GpuCard> _cards = new();
     private readonly Button _configBtn;
 
+    private readonly GroupBox _cpuStatsBox;
+    private readonly Label _cpuLoadLabel;
+    private readonly Label _cpuPowerLabel;
+
     private static string? _mongoUri;
     private static string? _dbName;
     private static string? _collectionName;
@@ -49,6 +53,34 @@ public sealed class GpuMonitorForm : Form
             Text = "Reading GPU…",
         };
 
+        _cpuStatsBox = new GroupBox
+        {
+            Text = "CPU Statistics",
+            ForeColor = Color.FromArgb(150, 170, 255),
+            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+            BackColor = Color.FromArgb(30, 32, 40),
+            Margin = new Padding(0, 0, 0, 12),
+            Padding = new Padding(10)
+        };
+
+        _cpuLoadLabel = new Label
+        {
+            Text = "Load: --",
+            AutoSize = true,
+            Margin = new Padding(0, 0, 20, 0),
+            Font = new Font("Segoe UI", 9F)
+        };
+
+        _cpuPowerLabel = new Label
+        {
+            Text = "Power: --",
+            AutoSize = true,
+            Font = new Font("Segoe UI", 9F)
+        };
+
+        _cpuStatsBox.Controls.Add(_cpuLoadLabel);
+        _cpuStatsBox.Controls.Add(_cpuPowerLabel);
+
         _configBtn = new Button
         {
             Text = "⚙",
@@ -73,6 +105,7 @@ public sealed class GpuMonitorForm : Form
         // Fill control must be added LAST so docked siblings reserve their space first.
         Controls.Add(_header);
         Controls.Add(_configBtn);
+        _host.Controls.Add(_cpuStatsBox); // Add CPU stats box at the top of the host
         Controls.Add(_host);
 
         _timer = new System.Windows.Forms.Timer { Interval = 1000 };
@@ -167,6 +200,8 @@ public sealed class GpuMonitorForm : Form
                 var collection = database.GetCollection<BsonDocument>(_collectionName);
 
                 var (cpuLoad, cpuPower) = _cpuMonitor.GetStats();
+                _cpuLoadLabel.Text = $"Load: {cpuLoad:F1}%";
+                _cpuPowerLabel.Text = $"Power: {cpuPower:F1} W";
 
                 var entry = new BsonDocument
                 {
