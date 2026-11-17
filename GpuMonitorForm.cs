@@ -21,9 +21,7 @@ public sealed class GpuMonitorForm : Form
     private readonly List<GpuCard> _cards = new();
     private readonly Button _configBtn;
 
-    private readonly GroupBox _cpuStatsBox;
-    private readonly Label _cpuLoadLabel;
-    private readonly Label _cpuPowerLabel;
+    private readonly CpuStatsCard _cpuStatsCard;
 
     private static string? _mongoUri;
     private static string? _dbName;
@@ -41,6 +39,15 @@ public sealed class GpuMonitorForm : Form
         SizeGripStyle = SizeGripStyle.Hide;
         MinimizeBox = false;
         MaximizeBox = false;
+        
+        // Create a container for the top bar to prevent overlapping
+        var topBar = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 70,
+            BackColor = Color.FromArgb(24, 26, 32),
+        };
+
         _header = new Label
         {
             Dock = DockStyle.Top,
@@ -52,34 +59,6 @@ public sealed class GpuMonitorForm : Form
             ForeColor = Color.FromArgb(150, 170, 255),
             Text = "Reading GPU…",
         };
-
-        _cpuStatsBox = new GroupBox
-        {
-            Text = "CPU Statistics",
-            ForeColor = Color.FromArgb(150, 170, 255),
-            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-            BackColor = Color.FromArgb(30, 32, 40),
-            Margin = new Padding(0, 0, 0, 12),
-            Padding = new Padding(10)
-        };
-
-        _cpuLoadLabel = new Label
-        {
-            Text = "Load: --",
-            AutoSize = true,
-            Margin = new Padding(0, 0, 20, 0),
-            Font = new Font("Segoe UI", 9F)
-        };
-
-        _cpuPowerLabel = new Label
-        {
-            Text = "Power: --",
-            AutoSize = true,
-            Font = new Font("Segoe UI", 9F)
-        };
-
-        _cpuStatsBox.Controls.Add(_cpuLoadLabel);
-        _cpuStatsBox.Controls.Add(_cpuPowerLabel);
 
         _configBtn = new Button
         {
@@ -94,6 +73,12 @@ public sealed class GpuMonitorForm : Form
         };
         _configBtn.Click += (s, e) => new ConfigForm().ShowDialog();
 
+        topBar.Controls.Add(_header);
+        topBar.Controls.Add(_configBtn);
+        this.Controls.Add(topBar);
+
+        _cpuStatsCard = new CpuStatsCard();
+
         _host = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -102,11 +87,10 @@ public sealed class GpuMonitorForm : Form
             Padding = new Padding(12),
         };
 
-        // Fill control must be added LAST so docked siblings reserve their space first.
-        Controls.Add(_header);
-        Controls.Add(_configBtn);
-        _host.Controls.Add(_cpuStatsBox); // Add CPU stats box at the top of the host
-        Controls.Add(_host);
+        // Add CPU stats first, then GPU cards
+        _host.Controls.Add(_cpuStatsCard);
+
+        this.Controls.Add(_host);
 
         _timer = new System.Windows.Forms.Timer { Interval = 1000 };
         _timer.Tick += OnTick;
@@ -190,6 +174,9 @@ public sealed class GpuMonitorForm : Form
 
         _header.Text = $"NVIDIA   ·   {gpus.Count} GPU(s)   ·   NVML   ·   updated {DateTime.Now:hh:mm:ss tt}";
 
+        var (cpuLoad, cpuPower) = _cpuMonitor.GetStats();
+        _cpuStatsCard.Update(cpuLoad, cpuPower);
+
         // Log to MongoDB
         if (!string.IsNullOrEmpty(_mongoUri) && !string.IsNullOrEmpty(_dbName) && !string.IsNullOrEmpty(_collectionName))
         {
@@ -198,10 +185,6 @@ public sealed class GpuMonitorForm : Form
                 var client = new MongoClient(_mongoUri);
                 var database = client.GetDatabase(_dbName);
                 var collection = database.GetCollection<BsonDocument>(_collectionName);
-
-                var (cpuLoad, cpuPower) = _cpuMonitor.GetStats();
-                _cpuLoadLabel.Text = $"Load: {cpuLoad:F1}%";
-                _cpuPowerLabel.Text = $"Power: {cpuPower:F1} W";
 
                 var entry = new BsonDocument
                 {
