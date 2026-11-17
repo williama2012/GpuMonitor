@@ -1,5 +1,12 @@
+using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using MongoDB.Driver;
+using MongoDB.Bson;
+using Microsoft.Win32;
 
 namespace GpuMonitor;
 
@@ -10,13 +17,19 @@ public sealed class GpuMonitorForm : Form
     private readonly FlowLayoutPanel _host;
     private readonly Label _header;
     private readonly GpuReader _reader = new();
+    private readonly CpuMonitor _cpuMonitor = new();
     private readonly List<GpuCard> _cards = new();
+    private readonly Button _configBtn;
+
+    private static string? _mongoUri;
+    private static string? _dbName;
+    private static string? _collectionName;
 
     public GpuMonitorForm()
     {
         Text = "NVIDIA GPU Monitor";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(600, 700);
+        MinimumSize = new System.Drawing.Size(600, 900);
         BackColor = Color.FromArgb(24, 26, 32);
         ForeColor = Color.FromArgb(226, 228, 233);
         Font = new Font("Segoe UI", 9F);
@@ -36,6 +49,19 @@ public sealed class GpuMonitorForm : Form
             Text = "Reading GPU…",
         };
 
+        _configBtn = new Button
+        {
+            Text = "⚙",
+            Dock = DockStyle.Top,
+            Height = 34,
+            FlatStyle = FlatStyle.Flat,
+            ForeColor = Color.FromArgb(150, 170, 255),
+            TextAlign = ContentAlignment.MiddleRight,
+            Padding = new Padding(10),
+            Font = new Font("Segoe UI", 12F)
+        };
+        _configBtn.Click += (s, e) => new ConfigForm().ShowDialog();
+
         _host = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -46,10 +72,25 @@ public sealed class GpuMonitorForm : Form
 
         // Fill control must be added LAST so docked siblings reserve their space first.
         Controls.Add(_header);
+        Controls.Add(_configBtn);
         Controls.Add(_host);
 
         _timer = new System.Windows.Forms.Timer { Interval = 1000 };
         _timer.Tick += OnTick;
+
+        LoadConfig();
+    }
+
+    private static void LoadConfig()
+    {
+        var key = Registry.CurrentUser.OpenSubKey(@"Software\GpuMonitor");
+        if (key != null)
+        {
+            _mongoUri = key.GetValue("MONGODB_URI")?.ToString();
+            _dbName = key.GetValue("DB_Name")?.ToString();
+            _collectionName = key.GetValue("COLLECTION_NAME")?.ToString();
+            key.Close();
+        }
     }
 
     protected override void OnShown(EventArgs e)
@@ -59,7 +100,7 @@ public sealed class GpuMonitorForm : Form
         OnTick(this, EventArgs.Empty); // paint first, don't wait 700ms
     }
 
-    private void OnTick(object? sender, EventArgs e)
+    private async void OnTick(object? sender, EventArgs e)
     {
         var (ok, gpus, err) = _reader.GetGpus();
 
@@ -110,15 +151,57 @@ public sealed class GpuMonitorForm : Form
         }
 
         for (int i = 0; i < _cards.Count && i < gpus.Count; i++)
+        {
             _cards[i].Update(gpus[i]);
+        }
 
         _header.Text = $"NVIDIA   ·   {gpus.Count} GPU(s)   ·   NVML   ·   updated {DateTime.Now:hh:mm:ss tt}";
+
+        // Log to MongoDB
+        if (!string.IsNullOrEmpty(_mongoUri) && !string.IsNullOrEmpty(_dbName) && !string.IsNullOrEmpty(_collectionName))
+        {
+            try
+            {
+                var client = new MongoClient(_mongoUri);
+                var database = client.GetDatabase(_dbName);
+                var collection = database.GetCollection<BsonDocument>(_collectionName);
+
+                var (cpuLoad, cpuPower) = _cpuMonitor.GetStats();
+
+                var entry = new BsonDocument
+                {
+                    { "timestamp", DateTime.UtcNow },
+                    { "cpu_load", cpuLoad },
+                    { "cpu_power", cpuPower },
+                    { "gpus", new BsonArray { } }
+                };
+
+                foreach (var gpu in gpus)
+                {
+                    ((BsonArray)entry["gpus"]).Append(new BsonDocument
+                    {
+                        { "core_load", gpu.CoreLoad },
+                        { "core_power", gpu.Power },
+                        { "vram_used", (long)gpu.VramUsed },
+                        { "vram_load", gpu.VramLoad }
+                    });
+                }
+
+                await collection.InsertOneAsync(entry);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MongoDB logging failed: {ex.Message}");
+            }
+        }
     }
+
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         _timer.Stop();
         _reader.Dispose();
+        _cpuMonitor.Dispose();
         base.OnFormClosed(e);
     }
 }

@@ -10,7 +10,7 @@ internal sealed class GpuData
     public ulong VramUsed { get; }  // bytes
     public uint CoreLoad { get; }  // % — nvmlDeviceGetUtilizationRates gpu
     public uint VramLoad { get; }  // % — nvmlDeviceGetSamples UTILITY_MEMORY (util-rates mem is 0 on some drivers)
-    public uint Power { get; }  // Watts — nvmlDeviceGetPowerUsage
+    public uint Power { get; }  // Watts — nvmlDeviceGetPowerUsage / 1000
 
     public GpuData(int index, string name, ulong total, ulong free, ulong used, uint core, uint vram, uint power)
     {
@@ -21,7 +21,7 @@ internal sealed class GpuData
         VramUsed = used;
         CoreLoad = core;
         VramLoad = vram;
-        Power = power;
+        Power = (uint)(power / 1000);
     }
 
     public static double BytesToGiB(ulong bytes) => bytes / 1024d / 1024d / 1024d;
